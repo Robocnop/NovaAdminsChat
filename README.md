@@ -10,7 +10,7 @@ Un plugin qui permet d'envoyer des messages en jeu entre admin.
 - Dans le fichier config vous pouvez aussi rajoutez votre webhook afin de loger tous ce qui est dit dans le chat admin.
 
 # Contrat d'utilisation
-[Veuillez lire ceci](https://github.com/Robocnop/AdminServicesNotifier/wiki/%5B2%5D-Contrat-d'utilisation)
+[Veuillez lire ceci](https://github.com/Robocnop/AdminServicesNotifier/wiki/%5B2%5D-Contrat-d'utilisation) (Le contrat de AdminServicesNotification est le même pour ce plugin)
 
 # Soon
 Un wiki arrivera bientôt afin de mieux expliquer le plugin.
