@@ -18,7 +18,7 @@ public class NovaAdminsChat : ModKit.ModKit
 
     public NovaAdminsChat(IGameAPI api) : base(api)
     {
-        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.1", "Robocnop");
+        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.2", "Robocnop");
     }
 
     public override void OnPluginInit()
@@ -48,7 +48,7 @@ public class NovaAdminsChat : ModKit.ModKit
             }
         }, 0);
 
-        new SChatCommand("/achat", "Chat admin", "/achat", (player, args) => { OnSlashAchat(player); }).Register();
+        new SChatCommand("/adminchat", "Chat admin", "/adminchat", (player, args) => { OnSlashAchat(player); }).Register();
     }
 
     public override void OnPlayerInput(Player player, KeyCode keyCode, bool onUI)
@@ -56,11 +56,11 @@ public class NovaAdminsChat : ModKit.ModKit
         base.OnPlayerInput(player, keyCode, onUI);
 
         // Vérifie si le joueur est admin avant d'ouvrir le panneau
-        if (keyCode == KeyCode.F6 && player.IsAdminService)
+        if (keyCode == KeyCode.F8 && player.IsAdminService)
         {
             OpenAdminChatPanel(player);
         }
-        else if (keyCode == KeyCode.F6)
+        else if (keyCode == KeyCode.F8)
         {
             player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
         }
@@ -131,3 +131,4 @@ public class NovaAdminsChat : ModKit.ModKit
 // rajouter pour plus tard le fait que si on est pas admin on ne peux pas intéragire avec la cmd et le keybind. Et pas laisser vous devez être en service admin.
 // + le webhook perso
 // + peux être les crédits
+// pouvoir choisir dans le json quelle touche attribuer pour ouvrir le chat admin
