@@ -18,7 +18,7 @@ public class NovaAdminsChat : ModKit.ModKit
 
     public NovaAdminsChat(IGameAPI api) : base(api)
     {
-        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.0", "Robocnop");
+        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.1", "Robocnop");
     }
 
     public override void OnPluginInit()
@@ -56,11 +56,11 @@ public class NovaAdminsChat : ModKit.ModKit
         base.OnPlayerInput(player, keyCode, onUI);
 
         // Vérifie si le joueur est admin avant d'ouvrir le panneau
-        if (keyCode == KeyCode.Y && player.IsAdminService)
+        if (keyCode == KeyCode.F6 && player.IsAdminService)
         {
             OpenAdminChatPanel(player);
         }
-        else if (keyCode == KeyCode.Y)
+        else if (keyCode == KeyCode.F6)
         {
             player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
         }
