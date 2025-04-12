@@ -15,3 +15,5 @@ Un plugin qui permet d'envoyer des messages en jeu entre admin.
 # Soon
 Un wiki arrivera bientôt afin de mieux expliquer le plugin.
 Vous pouvez me posez des question sur le Discord de Mod en me pingent.
+
+<img src="https://github.com/Robocnop/NovaAdminsChat/blob/main/Images/NovaAdminsChat.png">
