@@ -5,7 +5,7 @@ Un plugin qui permet d'envoyer des messages en jeu entre admin.
 
 # Utilisation
 
-- Commande /achat ou la touche Y de votre clavier
+- Commande /achat ou la touche F6 de votre clavier
 
 - Dans le fichier config vous pouvez aussi rajoutez votre webhook afin de loger tous ce qui est dit dans le chat admin.
 
