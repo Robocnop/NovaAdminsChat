@@ -9,4 +9,3 @@ Toute la documentation sur le plugin ce trouve [ICI](https://github.com/Robocnop
 # Contact
 **Dev Principal:** `@robocnop`
 
-<img src="https://github.com/Robocnop/NovaAdminsChat/blob/main/Images/NovaAdminsChat.png">
