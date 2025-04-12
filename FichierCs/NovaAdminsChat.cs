@@ -37,15 +37,6 @@ public class NovaAdminsChat : ModKit.ModKit
         {
             Player player = PanelHelper.ReturnPlayerFromPanel(ui);
 
-            // Ceci est totalement useless
-            if (player.IsAdminService)
-            {
-                player.Notify("NovaAdminsChat", "Tu as cliqué sur NovaAdminsChat !", NotificationManager.Type.Info, 5);
-            }
-            else
-            {
-                player.Notify("Erreur", "Vous n'avez pas les permissions pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
-            }
         }, 0);
 
         new SChatCommand("/adminchat", "Chat admin", "/adminchat", (player, args) => { OnSlashAchat(player); }).Register();
@@ -56,11 +47,11 @@ public class NovaAdminsChat : ModKit.ModKit
         base.OnPlayerInput(player, keyCode, onUI);
 
         // Vérifie si le joueur est admin avant d'ouvrir le panneau
-        if (keyCode == KeyCode.F8 && player.IsAdminService)
+        if (keyCode == KeyCode.F11 && player.IsAdminService)
         {
             OpenAdminChatPanel(player);
         }
-        else if (keyCode == KeyCode.F8)
+        else if (keyCode == KeyCode.F11)
         {
             player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
         }
