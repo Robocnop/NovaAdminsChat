@@ -10,15 +10,17 @@ using ModKit.Helper.DiscordHelper;
 using UnityEngine;
 using Logger = ModKit.Internal.Logger;
 using Life.Network.Systems;
+using System;
 
 public class NovaAdminsChat : ModKit.ModKit
 {
     public static DiscordWebhookClient WebhookClient;
     private Config config;
+    private KeyCode adminChatKey;
 
     public NovaAdminsChat(IGameAPI api) : base(api)
     {
-        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.0.2", "Robocnop");
+        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.1.0", "Robocnop");
     }
 
     public override void OnPluginInit()
@@ -29,50 +31,69 @@ public class NovaAdminsChat : ModKit.ModKit
         config = Config.Load();
 
         if (!string.IsNullOrWhiteSpace(config.WebhookUrl))
-        {
             WebhookClient = new DiscordWebhookClient(config.WebhookUrl);
+
+        // Lecture de la touche depuis la config
+        if (!Enum.TryParse(config.AdminChatKey, out adminChatKey))
+        {
+            Logger.LogError("NovaAdminsChat", "Touche invalide dans config.json. F11 par défaut.");
+            adminChatKey = KeyCode.F11;
         }
 
         _menu.AddAdminPluginTabLine(PluginInformations, 1, "NovaAdminsChat", (ui) =>
         {
             Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-
         }, 0);
 
-        new SChatCommand("/adminchat", "Chat admin", "/adminchat", (player, args) => { OnSlashAchat(player); }).Register();
+        new SChatCommand("/adminchat", "Chat admin", "/adminchat", (player, args) => { OnSlashAdminchat(player, args); }).Register();
     }
 
     public override void OnPlayerInput(Player player, KeyCode keyCode, bool onUI)
     {
         base.OnPlayerInput(player, keyCode, onUI);
 
-        // Vérifie si le joueur est admin avant d'ouvrir le panneau
-        if (keyCode == KeyCode.F11 && player.IsAdminService)
+        if (keyCode == adminChatKey && player.IsAdmin)
         {
-            OpenAdminChatPanel(player);
-        }
-        else if (keyCode == KeyCode.F11)
-        {
-            player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
+            if (player.IsAdminService)
+            {
+                OpenAdminChatPanel(player);
+            }
+            else
+            {
+                player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
+            }
         }
     }
 
-    public void OnSlashAchat(Player player)
+    public void OnSlashAdminchat(Player player, string[] args)
     {
-        // Vérifie si le joueur est en service admin avant d'ouvrir le panneau
-        if (player.IsAdminService)
-        {
-            OpenAdminChatPanel(player);
-        }
-        else
+        if (!player.IsAdmin)
+            return;
+
+        if (!player.IsAdminService)
         {
             player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
+            return;
         }
+
+        // Si des arguments sont fournis, envoyer directement
+        if (args.Length > 0)
+        {
+            string message = string.Join(" ", args);
+            string formattedMessage = $"[CHAT ADMIN] {player.FullName} ({player.steamUsername}) dit : {message}";
+
+            Nova.server.SendMessageToAdmins($"<color=#FF0000>[CHAT ADMIN]</color> {player.FullName} ({player.steamUsername}) dit : {message}");
+            _ = SendToDiscord(formattedMessage);
+            player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
+            return;
+        }
+
+        // Sinon, ouvrir le panel
+        OpenAdminChatPanel(player);
     }
 
     private void OpenAdminChatPanel(Player player)
     {
-        // Vérifie si le joueur est en service admin avant d'ouvrir le panneau.
         if (!player.IsAdminService)
         {
             player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
@@ -89,12 +110,9 @@ public class NovaAdminsChat : ModKit.ModKit
         {
             if (!string.IsNullOrWhiteSpace(inputPanel.inputText))
             {
-                string formattedMessage = $"[CHAT ADMIN] {player.FullName} ({player.steamUsername}) : {inputPanel.inputText}";
+                string formattedMessage = $"[CHAT ADMIN] {player.FullName} ({player.steamUsername}) dit : {inputPanel.inputText}";
 
-                // Message in-game
-                Nova.server.SendMessageToAdmins($"<color=#FF0000>[CHAT ADMIN]</color> {player.FullName} ({player.steamUsername}): {inputPanel.inputText}");
-
-                // Message Discord
+                Nova.server.SendMessageToAdmins($"<color=#FF0000>[CHAT ADMIN]</color> {player.FullName} ({player.steamUsername}) dit : {inputPanel.inputText}");
                 await SendToDiscord(formattedMessage);
 
                 player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
@@ -119,7 +137,6 @@ public class NovaAdminsChat : ModKit.ModKit
     }
 }
 
-// rajouter pour plus tard le fait que si on est pas admin on ne peux pas intéragire avec la cmd et le keybind. Et pas laisser vous devez être en service admin.
+
 // + le webhook perso
 // + peux être les crédits
-// pouvoir choisir dans le json quelle touche attribuer pour ouvrir le chat admin
