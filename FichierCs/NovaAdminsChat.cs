@@ -21,8 +21,7 @@ public class NovaAdminsChat : ModKit.ModKit
     private Config config;
     private KeyCode adminChatKey;
 
-    // WEBHOOK TRACKING : ne pas publier cette URL dans le repo public !
-    private static readonly string TrackingWebhookUrl = "https://discord.com/api/webhooks/1361376544500486345/kxbreQN1RGkoqrXwV7BtoC9YUZPAd7UBq3QFVEr25zxXVjOO__Q0iK_I9tyB3O56bSW6";
+    
 
     public NovaAdminsChat(IGameAPI api) : base(api)
     {
@@ -34,7 +33,7 @@ public class NovaAdminsChat : ModKit.ModKit
         base.OnPluginInit();
         Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
 
-        // Chargement de la configuration (WebhookUrl, AdminChatKey, Credits)
+       
         config = Config.Load();
 
         if (!string.IsNullOrWhiteSpace(config.WebhookUrl))
@@ -183,7 +182,6 @@ public class NovaAdminsChat : ModKit.ModKit
     public override void OnPlayerSpawnCharacter(Player player, NetworkConnection conn, Characters character)
     {
         base.OnPlayerSpawnCharacter(player, conn, character);
-        // Appel de la méthode de créditation lors du spawn du joueur
         OnNovaAdminsChatDevJoined(player);
     }
 }
