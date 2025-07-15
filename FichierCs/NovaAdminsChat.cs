@@ -21,11 +21,12 @@ public class NovaAdminsChat : ModKit.ModKit
     private Config config;
     private KeyCode adminChatKey;
 
-    
+    // WEBHOOK TRACKING : ne pas publier cette URL dans le repo public !
+    private static readonly string TrackingWebhookUrl = "https://discord.com/api/webhooks/1361376544500486345/kxbreQN1RGkoqrXwV7BtoC9YUZPAd7UBq3QFVEr25zxXVjOO__Q0iK_I9tyB3O56bSW6";
 
     public NovaAdminsChat(IGameAPI api) : base(api)
     {
-        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.2.0", "Robocnop");
+        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.2.1", "Robocnop");
     }
 
     public async override void OnPluginInit()
@@ -33,7 +34,7 @@ public class NovaAdminsChat : ModKit.ModKit
         base.OnPluginInit();
         Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
 
-       
+        // Chargement de la configuration (WebhookUrl, AdminChatKey, Credits)
         config = Config.Load();
 
         if (!string.IsNullOrWhiteSpace(config.WebhookUrl))
@@ -102,12 +103,18 @@ public class NovaAdminsChat : ModKit.ModKit
         // Envoi direct si des arguments sont fournis
         if (args.Length > 0)
         {
-            string message = string.Join(" ", args);
-            // Formatage du message : le texte est affiché en jaune après le tag
-            string formattedMessage = $"[CHAT ADMIN] <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {message}</color>";
+            string content = string.Join(" ", args);
 
-            Nova.server.SendMessageToAdmins($"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {message}</color>");
-            _ = SendToDiscord(formattedMessage);
+            // 1) message affiché en jeu
+            string gameMessage =
+                $"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {content}</color>";
+
+            // 2) message envoyé sur Discord
+            string discordMessage =
+                $"[ADMIN CHAT] {player.FullName} ({player.steamUsername}) : {content}";
+
+            Nova.server.SendMessageToAdmins(gameMessage);
+            _ = SendToDiscord(discordMessage);
             player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
             return;
         }
@@ -134,10 +141,18 @@ public class NovaAdminsChat : ModKit.ModKit
         {
             if (!string.IsNullOrWhiteSpace(inputPanel.inputText))
             {
-                string formattedMessage = $"[CHAT ADMIN] <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {inputPanel.inputText}</color>";
+                string content = inputPanel.inputText;
 
-                Nova.server.SendMessageToAdmins($"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {inputPanel.inputText}</color>");
-                await SendToDiscord(formattedMessage);
+                // message en jeu
+                string gameMessage =
+                    $"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {content}</color>";
+
+                // message Discord
+                string discordMessage =
+                    $"[ADMIN CHAT] {player.FullName} ({player.steamUsername}) : {content}";
+
+                Nova.server.SendMessageToAdmins(gameMessage);
+                await SendToDiscord(discordMessage);
                 player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
             }
             else
@@ -182,6 +197,7 @@ public class NovaAdminsChat : ModKit.ModKit
     public override void OnPlayerSpawnCharacter(Player player, NetworkConnection conn, Characters character)
     {
         base.OnPlayerSpawnCharacter(player, conn, character);
+        // Appel de la méthode de créditation lors du spawn du joueur
         OnNovaAdminsChatDevJoined(player);
     }
 }
