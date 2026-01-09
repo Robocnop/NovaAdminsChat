@@ -1,37 +1,135 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
 
-public class Config
+namespace NovaAdminsChat.FichierCs
 {
-    public string WebhookUrl = "https://discord.com/api/webhooks/TON_WEBHOOK_ICI";
-    public string AdminChatKey = "F11";
-    public string Credits = "true";
-
-    private static readonly string configPath;
-
-    static Config()
+    public class Config
     {
-        // Récupère le chemin de l'assembly et crée le dossier "NovaAdminsChat"
-        string assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string directoryPath = Path.Combine(assemblyDirectory, "NovaAdminsChat");
+        public string WebhookUrl { get; set; } = "https://discord.com/api/webhooks/TON_WEBHOOK_ICI";
+        public string AdminChatKey { get; set; } = "F11";
+        public bool ShowSteamUsername { get; set; } = true;
+        public string AdminChatColor { get; set; } = "#FF0000";
+        public string MessageColor { get; set; } = "#FFFF00";
+        public bool VerboseLogs { get; set; } = false;
+        public string Credits { get; set; } = "true";
 
-        configPath = Path.Combine(directoryPath, "config.json");
+        private static string _configPath;
 
-        if (!Directory.Exists(directoryPath))
-            Directory.CreateDirectory(directoryPath);
-    }
-
-    public static Config Load()
-    {
-        if (!File.Exists(configPath))
+        public static void Initialize()
         {
-            // Crée une configuration par défaut et la sauvegarde si le fichier n'existe pas
-            var defaultConfig = new Config();
-            File.WriteAllText(configPath, JsonConvert.SerializeObject(defaultConfig, Formatting.Indented));
-            return defaultConfig;
+            string assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string directoryPath = Path.Combine(assemblyDirectory, "NovaAdminsChat");
+            _configPath = Path.Combine(directoryPath, "config.json");
+
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
         }
 
-        return JsonConvert.DeserializeObject<Config>(File.ReadAllText(configPath));
+        public static Config Load()
+        {
+            Initialize();
+
+            if (!File.Exists(_configPath))
+            {
+                var defaultConfig = new Config();
+                Save(defaultConfig);
+                CreateReadme();
+                return defaultConfig;
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<Config>(File.ReadAllText(_configPath));
+            }
+            catch
+            {
+                var defaultConfig = new Config();
+                Save(defaultConfig);
+                return defaultConfig;
+            }
+        }
+
+        public static void Save(Config config)
+        {
+            File.WriteAllText(_configPath, JsonConvert.SerializeObject(config, Formatting.Indented));
+        }
+
+        private static void CreateReadme()
+        {
+            string readmePath = Path.Combine(Path.GetDirectoryName(_configPath), "CONFIG_README.txt");
+            
+            string readmeContent = @"=====================================================
+  NOVAADMINSCHAT - CONFIGURATION
+=====================================================
+
+Ce fichier explique chaque option du fichier config.json
+
+-----------------------------------------------------
+WebhookUrl (texte)
+-----------------------------------------------------
+URL du webhook Discord pour recevoir les messages.
+Exemple: https://discord.com/api/webhooks/123456/abcdef
+
+Comment creer un webhook Discord:
+1. Parametres du salon > Integrations > Webhooks
+2. Nouveau Webhook
+3. Copier l'URL du webhook
+
+-----------------------------------------------------
+AdminChatKey (texte)
+-----------------------------------------------------
+Touche pour ouvrir le chat admin.
+Exemples: F11, F10, Insert, Delete, KeypadEnter
+
+Liste complete des touches:
+https://docs.unity3d.com/ScriptReference/KeyCode.html
+
+-----------------------------------------------------
+ShowSteamUsername (true/false)
+-----------------------------------------------------
+Afficher le pseudo Steam dans les messages.
+- true: affiche ""John Doe (JohnSteam)""
+- false: affiche ""John Doe""
+
+-----------------------------------------------------
+AdminChatColor (couleur hex)
+-----------------------------------------------------
+Couleur du tag [CHAT ADMIN] en hexadecimal.
+Defaut: #FF0000 (rouge)
+Exemples:
+  - Rouge: #FF0000
+  - Bleu: #0000FF
+  - Vert: #00FF00
+  - Orange: #FFA500
+
+-----------------------------------------------------
+MessageColor (couleur hex)
+-----------------------------------------------------
+Couleur du message en hexadecimal.
+Defaut: #FFFF00 (jaune)
+
+-----------------------------------------------------
+VerboseLogs (true/false)
+-----------------------------------------------------
+Activer les logs detailles pour le debug.
+- true: affiche tous les messages dans la console
+- false: affiche uniquement les erreurs et infos importantes
+
+Utile pour debugger les problemes.
+
+-----------------------------------------------------
+Credits (""true""/""false"")
+-----------------------------------------------------
+Afficher une notification au developpeur s'il se connecte.
+- ""true"": affiche une notification discrete
+- ""false"": aucune notification
+
+=====================================================
+";
+            
+            File.WriteAllText(readmePath, readmeContent);
+        }
     }
 }
+

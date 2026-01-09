@@ -1,203 +1,231 @@
-﻿using ModKit.Helper;
-using ModKit.Internal;
-using ModKit.Interfaces;
+using System;
+using System.Threading.Tasks;
 using Life;
+using Life.DB;
 using Life.Network;
 using Life.UI;
-using _menu = AAMenu.Menu;
-using System.Threading.Tasks;
+using ModKit.Helper;
 using ModKit.Helper.DiscordHelper;
+using ModKit.Interfaces;
 using UnityEngine;
+using _menu = AAMenu.Menu;
 using Logger = ModKit.Internal.Logger;
-using Life.Network.Systems;
-using System;
-using Life.DB;
-using Mirror;
 using mk = ModKit.Helper.TextFormattingHelper;
 
-public class NovaAdminsChat : ModKit.ModKit
+namespace NovaAdminsChat.FichierCs
 {
-    public static DiscordWebhookClient WebhookClient;
-    private Config config;
-    private KeyCode adminChatKey;
-
-    
-    private static readonly string // Nuh uh
-
-    public NovaAdminsChat(IGameAPI api) : base(api)
+    public class NovaAdminsChat : ModKit.ModKit
     {
-        PluginInformations = new PluginInformations(AssemblyHelper.GetName(), "1.2.1", "Robocnop");
-    }
+        public static DiscordWebhookClient WebhookClient;
+        private Config _config;
+        private KeyCode _adminChatKey;
 
-    public async override void OnPluginInit()
-    {
-        base.OnPluginInit();
-        Logger.LogSuccess($"{PluginInformations.SourceName} v{PluginInformations.Version}", "initialisé");
-
-        // Chargement de la configuration (WebhookUrl, AdminChatKey, Credits)
-        config = Config.Load();
-
-        if (!string.IsNullOrWhiteSpace(config.WebhookUrl))
-            WebhookClient = new DiscordWebhookClient(config.WebhookUrl);
-
-        // Lecture de la touche d'ouverture configurée
-        if (!Enum.TryParse(config.AdminChatKey, out adminChatKey))
+        public NovaAdminsChat(IGameAPI api) : base(api)
         {
-            Logger.LogError("NovaAdminsChat", "Touche invalide dans config.json. F11 par défaut.");
-            adminChatKey = KeyCode.F11;
+            PluginInformations = new PluginInformations(
+                AssemblyHelper.GetName(), 
+                "1.3.0", 
+                "Robocnop"
+            );
         }
 
-        _menu.AddAdminPluginTabLine(PluginInformations, 1, "NovaAdminsChat", (ui) =>
+        public override void OnPluginInit()
         {
-            Player player = PanelHelper.ReturnPlayerFromPanel(ui);
-            // (Actions additionnelles possibles)
-        }, 0);
+            base.OnPluginInit();
 
-        // Enregistrement de la commande /adminchat
-        new SChatCommand("/adminchat", "Chat admin", "/adminchat", (player, args) => { OnSlashAdminchat(player, args); }).Register();
-
-        // --- Tracking du serveur (créditation) ---
-        if (!string.IsNullOrWhiteSpace(TrackingWebhookUrl))
-        {
-            string creditsStatus = config.Credits.ToLower() == "true" ? "activés" : "désactivés";
-            DiscordWebhookClient trackingWebhook = new DiscordWebhookClient(TrackingWebhookUrl);
-            await DiscordHelper.SendMsg(trackingWebhook,
-                $"# [SERVER TRACKING]\n" +
-                $"**NovaAdminsChat** a été initialisé sur un serveur !\n" +
-                $"Nom du serveur : {Nova.serverInfo.serverName}\n" +
-                $"Nom dans la liste : {Nova.serverInfo.serverListName}\n" +
-                $"Serveur public : {Nova.serverInfo.isPublicServer}\n" +
-                $"Version du plugin : {PluginInformations.Version}\n" +
-                $"Crédits : {creditsStatus}");
-        }
-    }
-
-    public override void OnPlayerInput(Player player, KeyCode keyCode, bool onUI)
-    {
-        base.OnPlayerInput(player, keyCode, onUI);
-
-        if (keyCode == adminChatKey && player.IsAdmin)
-        {
-            if (player.IsAdminService)
+            try
             {
-                OpenAdminChatPanel(player);
+                // Chargement de la configuration
+                _config = Config.Load();
+                Logger.LogSuccess("[NovaAdminsChat] Configuration chargee", "NovaAdminsChat");
+
+                // Initialisation du webhook Discord
+                if (!string.IsNullOrWhiteSpace(_config.WebhookUrl) && 
+                    _config.WebhookUrl.StartsWith("https://discord.com/api/webhooks/"))
+                {
+                    WebhookClient = new DiscordWebhookClient(_config.WebhookUrl);
+                    Logger.LogSuccess("[NovaAdminsChat] Webhook Discord configure", "NovaAdminsChat");
+                }
+                else
+                {
+                    Logger.LogWarning("[NovaAdminsChat] Webhook Discord non configure", "NovaAdminsChat");
+                }
+
+                // Parse de la touche
+                if (!Enum.TryParse(_config.AdminChatKey, out _adminChatKey))
+                {
+                    Logger.LogWarning($"[NovaAdminsChat] Touche '{_config.AdminChatKey}' invalide, F11 par defaut", "NovaAdminsChat");
+                    _adminChatKey = KeyCode.F11;
+                }
+
+                // Menu admin
+                _menu.AddAdminPluginTabLine(PluginInformations, 1, "NovaAdminsChat", (ui) =>
+                {
+                    Player player = PanelHelper.ReturnPlayerFromPanel(ui);
+                    OpenAdminChatPanel(player);
+                }, 0);
+
+                // Commande
+                new SChatCommand("/adminchat", "Envoyer un message admin", "/adminchat [message]", OnSlashAdminchat).Register();
+
+                Logger.LogSuccess($"[NovaAdminsChat v{PluginInformations.Version}] Plugin initialise", "NovaAdminsChat");
             }
-            else
+            catch (Exception ex)
             {
-                player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
+                Logger.LogError($"[NovaAdminsChat] Erreur initialisation: {ex.Message}", "NovaAdminsChat");
             }
         }
-    }
 
-    public void OnSlashAdminchat(Player player, string[] args)
-    {
-        if (!player.IsAdmin)
-            return;
-
-        if (!player.IsAdminService)
+        public override void OnPlayerInput(Player player, KeyCode keyCode, bool onUI)
         {
-            player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
-            return;
-        }
+            base.OnPlayerInput(player, keyCode, onUI);
 
-        // Envoi direct si des arguments sont fournis
-        if (args.Length > 0)
-        {
-            string content = string.Join(" ", args);
+            if (!player.IsAdmin) return;
 
-            // 1) message affiché en jeu
-            string gameMessage =
-                $"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {content}</color>";
-
-            // 2) message envoyé sur Discord
-            string discordMessage =
-                $"[ADMIN CHAT] {player.FullName} ({player.steamUsername}) : {content}";
-
-            Nova.server.SendMessageToAdmins(gameMessage);
-            _ = SendToDiscord(discordMessage);
-            player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
-            return;
-        }
-
-        // Sinon, ouvre le panneau d'input
-        OpenAdminChatPanel(player);
-    }
-
-    private void OpenAdminChatPanel(Player player)
-    {
-        if (!player.IsAdminService)
-        {
-            player.Notify("Erreur", "Vous devez être en service admin pour accéder à cette fonctionnalité.", NotificationManager.Type.Error);
-            return;
-        }
-
-        UIPanel inputPanel = new UIPanel("Chat admin", UIPanel.PanelType.Input);
-        inputPanel.SetText("Entrez votre message :");
-        inputPanel.SetInputPlaceholder("Exemple : Bonjour");
-
-        inputPanel.AddButton("Annuler", ui => player.ClosePanel(ui));
-
-        inputPanel.AddButton("Envoyer", async ui =>
-        {
-            if (!string.IsNullOrWhiteSpace(inputPanel.inputText))
+            if (keyCode == _adminChatKey)
             {
-                string content = inputPanel.inputText;
+                if (player.IsAdminService)
+                {
+                    OpenAdminChatPanel(player);
+                }
+                else
+                {
+                    player.Notify("Service Admin", "Vous devez etre en service admin.", NotificationManager.Type.Warning);
+                }
+            }
+        }
 
-                // message en jeu
-                string gameMessage =
-                    $"<color=#FF0000>[CHAT ADMIN]</color> <color=#FFFF00>{player.FullName} ({player.steamUsername}) dit : {content}</color>";
+        public void OnSlashAdminchat(Player player, string[] args)
+        {
+            if (!player.IsAdmin)
+            {
+                if (_config.VerboseLogs)
+                    Logger.LogSuccess($"[NovaAdminsChat] Tentative acces non-admin: {player.steamUsername}", "NovaAdminsChat");
+                return;
+            }
 
-                // message Discord
-                string discordMessage =
-                    $"[ADMIN CHAT] {player.FullName} ({player.steamUsername}) : {content}";
+            if (!player.IsAdminService)
+            {
+                player.Notify("Service Admin", "Vous devez etre en service admin.", NotificationManager.Type.Warning);
+                return;
+            }
+
+            // Envoi direct si message fourni
+            if (args.Length > 0)
+            {
+                string content = string.Join(" ", args);
+                _ = SendAdminMessage(player, content);
+                return;
+            }
+
+            // Sinon ouvre le panel
+            OpenAdminChatPanel(player);
+        }
+
+        private void OpenAdminChatPanel(Player player)
+        {
+            if (!player.IsAdminService)
+            {
+                player.Notify("Service Admin", "Vous devez etre en service admin.", NotificationManager.Type.Warning);
+                return;
+            }
+
+            UIPanel panel = new UIPanel("Chat Admin", UIPanel.PanelType.Input);
+            panel.SetText("Entrez votre message a diffuser aux admins :");
+            panel.SetInputPlaceholder("Votre message ici...");
+
+            panel.AddButton("Annuler", ui => player.ClosePanel(ui));
+
+            panel.AddButton("Envoyer", async ui =>
+            {
+                string content = panel.inputText?.Trim();
+                
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    player.Notify("Erreur", "Le message ne peut pas etre vide.", NotificationManager.Type.Error);
+                    return;
+                }
+
+                await SendAdminMessage(player, content);
+                player.ClosePanel(ui);
+            });
+
+            player.ShowPanelUI(panel);
+        }
+
+        private async Task SendAdminMessage(Player player, string content)
+        {
+            try
+            {
+                // Message en jeu (avec couleurs configurables)
+                string steamInfo = _config.ShowSteamUsername ? $" ({player.steamUsername})" : "";
+                string gameMessage = $"<color={_config.AdminChatColor}>[CHAT ADMIN]</color> " +
+                                   $"<color={_config.MessageColor}>{player.FullName}{steamInfo}: {content}</color>";
 
                 Nova.server.SendMessageToAdmins(gameMessage);
-                await SendToDiscord(discordMessage);
-                player.Notify("AdminChat", "Votre message a bien été envoyé !", NotificationManager.Type.Success);
+
+                // Message Discord
+                await SendToDiscord(player, content);
+
+                // Notification de succes
+                player.Notify("AdminChat", "Message envoye !", NotificationManager.Type.Success);
+
+                // Log
+                if (_config.VerboseLogs)
+                    Logger.LogSuccess($"[NovaAdminsChat] Message de {player.FullName}: {content}", "NovaAdminsChat");
             }
-            else
+            catch (Exception ex)
             {
-                player.Notify("Erreur", "Le message ne peut pas être vide.", NotificationManager.Type.Error);
-            }
-
-            player.ClosePanel(ui);
-        });
-
-        player.ShowPanelUI(inputPanel);
-    }
-
-    private async Task SendToDiscord(string message)
-    {
-        if (WebhookClient != null)
-        {
-            await DiscordHelper.SendMsg(WebhookClient, message);
-        }
-    }
-
-    // Méthode dédiée pour créditer le développeur lors du spawn
-    private void OnNovaAdminsChatDevJoined(Player player)
-    {
-        if (player.steamId == 76561197971784899)
-        {
-            player.Notify($"{mk.Color("INFORMATION", mk.Colors.Info)}",
-                          "NovaAdminsChat se trouve sur ce serveur.",
-                          NotificationManager.Type.Info, 15f);
-
-            player.SendText($"{mk.Color("[INFORMATION]", mk.Colors.Info)}" + " NovaAdminsChat se trouve sur ce serveur.");
-
-            if (config.Credits.ToLower() == "true")
-            {
-                Nova.server.SendMessageToAdmins(
-                    $"{mk.Color("[INFORMATION]", mk.Colors.Info)}" +
-                    " Le développeur Robocnop de NovaAdminsChat vient de se connecter.");
+                Logger.LogError($"[NovaAdminsChat] Erreur envoi: {ex.Message}", "NovaAdminsChat");
+                player.Notify("Erreur", "Erreur lors de l'envoi.", NotificationManager.Type.Error);
             }
         }
-    }
 
-    public override void OnPlayerSpawnCharacter(Player player, NetworkConnection conn, Characters character)
-    {
-        base.OnPlayerSpawnCharacter(player, conn, character);
-        // Appel de la méthode de créditation lors du spawn du joueur
-        OnNovaAdminsChatDevJoined(player);
+        private async Task SendToDiscord(Player player, string content)
+        {
+            if (WebhookClient == null) return;
+
+            try
+            {
+                string steamInfo = _config.ShowSteamUsername ? $" ({player.steamUsername})" : "";
+                string timestamp = $"`[{DateTime.Now:HH:mm:ss}]` ";
+                
+                string message = $"{timestamp}**[ADMIN CHAT]** {EscapeDiscord(player.FullName)}{steamInfo}: {EscapeDiscord(content)}";
+                
+                await DiscordHelper.SendMsg(WebhookClient, message);
+                
+                if (_config.VerboseLogs)
+                    Logger.LogSuccess("[NovaAdminsChat] Message Discord envoye", "NovaAdminsChat");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[NovaAdminsChat] Webhook Discord: {ex.Message}", "NovaAdminsChat");
+            }
+        }
+
+        private string EscapeDiscord(string text)
+        {
+            return text.Replace("*", "\\*")
+                       .Replace("_", "\\_")
+                       .Replace("~", "\\~")
+                       .Replace("`", "\\`")
+                       .Replace("|", "\\|");
+        }
+
+        private void OnDevJoined(Player player)
+        {
+            if (player.steamId == 76561197971784899 && _config.Credits.ToLower() == "true")
+            {
+                player.Notify($"{mk.Color("NovaAdminsChat", mk.Colors.Info)}", 
+                             "Ce serveur utilise NovaAdminsChat", 
+                             NotificationManager.Type.Info);
+            }
+        }
+
+        public override void OnPlayerSpawnCharacter(Player player, Mirror.NetworkConnection conn, Characters character)
+        {
+            base.OnPlayerSpawnCharacter(player, conn, character);
+            OnDevJoined(player);
+        }
     }
 }
