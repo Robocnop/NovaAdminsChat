@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Jeux](https://img.shields.io/badge/Jeux-Nova%20Life-orange.svg)
 ![License](https://img.shields.io/badge/license-GNU%20GPL%20v3-red.svg)
 ![GitHub all releases](https://img.shields.io/github/downloads/Robocnop/NovaAdminsChat/total)
